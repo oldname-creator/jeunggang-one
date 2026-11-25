@@ -1,48 +1,57 @@
-<h1>증강원</h1>
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>증강원 - 롤 증강 추천기 v1</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            navy: {
+              950: '#090d16',
+              900: '#0f172a',
+              800: '#1e293b',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* 커스텀 스크롤바 (다크모드) */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
+</head>
+<body class="bg-navy-950 text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white">
 
-<h2>1. 내 챔피언</h2>
-<input id="myChamp" list="champ">
+  <!-- [구역 1] 상단 헤더 -->
+  <header class="border-b border-slate-800 bg-navy-900/80 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-black text-white shadow-lg shadow-indigo-500/20">
+          증
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-white">증강원 <span class="text-xs font-medium text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full ml-1">v1</span></h1>
+          <p class="text-xs text-slate-400">롤 아레나 초성검색 & 시너지 증강 추천기</p>
+        </div>
+      </div>
+      <button id="btn-reset" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+        전체 초기화
+      </button>
+    </div>
+  </header>
 
-<datalist id="champ">
-  <option>헤카림</option>
-  <option>제이스</option>
-  <option>징크스</option>
-</datalist>
+  <!-- [구역 2] 메인 입력 및 결과 컨테이너 -->
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
 
-<h2>2. 먹은 증강</h2>
-<input id="ownedAug" list="Augment">
-
-<datalist id="Augment">
-  <option>보석 건틀릿</option>
-  <option>검을 뽑아라</option>
-  <option>기본으로 돌아가기</option>
-</datalist>
-
-<h2>3. 먹을 증강 3개</h2>
-<input id="pick1" list="Augment">
-<input id="pick2" list="Augment">
-<input id="pick3" list="Augment">
-<br><br>
-
-<button id="recommendBtn">증강 추천 받기</button>
-
-<!-- 결과가 출력될 빈 자리 -->
-<h2 id="resultBox"></h2>
-
-<script>
-  // 1. 화면에서 버튼 찾아오기
-  const btn = document.getElementById("recommendBtn");
-
-  // 2. 버튼을 클릭하면 실행할 명령 묶음
-  btn.addEventListener("click", function() {
-    // 각 칸에 유저가 적은 글자 읽어오기
-    const champ = document.getElementById("myChamp").value;
-    const p1 = document.getElementById("pick1").value;
-    const p2 = document.getElementById("pick2").value;
-    const p3 = document.getElementById("pick3").value;
-
-    // 결과 자리에 문장 띄우기
-    const resultBox = document.getElementById("resultBox");
-    resultBox.innerText = champ + " 유저님! 후보 [" + p1 + ", " + p2 + ", " + p3 + "] 중 1순위 계산 준비 완료!";
-  });
-</script>
+    <!-- 상단 2열 그리드: 내 챔피언 / 이미 먹은 증강 -->
+    <div class="grid grid
