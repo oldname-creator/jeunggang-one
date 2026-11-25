@@ -1,7 +1,7 @@
 <h1>증강원</h1>
 
 <h2>1. 내 챔피언</h2>
-<input list="champ">
+<input id="myChamp" list="champ">
 
 <datalist id="champ">
   <option>헤카림</option>
@@ -10,7 +10,7 @@
 </datalist>
 
 <h2>2. 먹은 증강</h2>
-<input list="Augment">
+<input id="ownedAug" list="Augment">
 
 <datalist id="Augment">
   <option>보석 건틀릿</option>
@@ -19,9 +19,30 @@
 </datalist>
 
 <h2>3. 먹을 증강 3개</h2>
-<input list="Augment">
-<input list="Augment">
-<input list="Augment">
+<input id="pick1" list="Augment">
+<input id="pick2" list="Augment">
+<input id="pick3" list="Augment">
 <br><br>
 
-<button>증강 추천 받기</button>
+<button id="recommendBtn">증강 추천 받기</button>
+
+<!-- 결과가 출력될 빈 자리 -->
+<h2 id="resultBox"></h2>
+
+<script>
+  // 1. 화면에서 버튼 찾아오기
+  const btn = document.getElementById("recommendBtn");
+
+  // 2. 버튼을 클릭하면 실행할 명령 묶음
+  btn.addEventListener("click", function() {
+    // 각 칸에 유저가 적은 글자 읽어오기
+    const champ = document.getElementById("myChamp").value;
+    const p1 = document.getElementById("pick1").value;
+    const p2 = document.getElementById("pick2").value;
+    const p3 = document.getElementById("pick3").value;
+
+    // 결과 자리에 문장 띄우기
+    const resultBox = document.getElementById("resultBox");
+    resultBox.innerText = champ + " 유저님! 후보 [" + p1 + ", " + p2 + ", " + p3 + "] 중 1순위 계산 준비 완료!";
+  });
+</script>
