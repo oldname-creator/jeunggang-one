@@ -54,4 +54,477 @@
   <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
 
     <!-- 상단 2열 그리드: 내 챔피언 / 이미 먹은 증강 -->
-    <div class="grid grid
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+      <!-- 2-1. 내 챔피언 선택 카드 -->
+      <section class="bg-navy-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+            1. 내 챔피언 선택 (1개)
+          </h2>
+          <span class="text-[11px] text-slate-400">초성 검색 가능 (예: ㅇㅅㅇ)</span>
+        </div>
+
+        <input id="search-champ" type="text" placeholder="챔피언 이름 또는 초성 입력..."
+          class="w-full px-3.5 py-2.5 rounded-xl bg-navy-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition" />
+
+        <!-- 선택된 챔피언 슬롯 -->
+        <div id="selected-champ-slot" class="min-h-[44px] flex items-center">
+          <span class="text-xs text-slate-500">선택된 챔피언이 없습니다.</span>
+        </div>
+
+        <!-- 챔피언 검색 결과 목록 -->
+        <div id="list-champ" class="max-h-40 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1"></div>
+      </section>
+
+      <!-- 2-2. 이미 먹은 증강 선택 카드 -->
+      <section class="bg-navy-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            2. 이미 먹은 증강 (복수 선택)
+          </h2>
+          <span class="text-[11px] text-slate-400">클릭 시 해제</span>
+        </div>
+
+        <input id="search-owned" type="text" placeholder="보유 증강 이름 또는 초성 입력..."
+          class="w-full px-3.5 py-2.5 rounded-xl bg-navy-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition" />
+
+        <!-- 선택된 보유 증강 슬롯 -->
+        <div id="selected-owned-slot" class="min-h-[44px] flex flex-wrap gap-1.5 items-center">
+          <span class="text-xs text-slate-500">보유한 증강이 없습니다. (선택 사항)</span>
+        </div>
+
+        <!-- 보유 증강 검색 결과 목록 -->
+        <div id="list-owned" class="max-h-40 overflow-y-auto space-y-1.5 pt-1"></div>
+      </section>
+
+    </div>
+
+    <!-- 2-3. 현재 후보 증강 3개 선택 카드 -->
+    <section class="bg-navy-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <h2 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          3. 현재 뜬 후보 증강 선택 (최대 3개)
+        </h2>
+        <span id="candidate-count" class="text-xs font-semibold text-amber-400">0 / 3 선택됨</span>
+      </div>
+
+      <!-- 선택된 후보 3개 슬롯 -->
+      <div id="selected-candidates-slot" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+
+      <!-- 후보 증강 검색창 -->
+      <input id="search-candidate" type="text" placeholder="후보 증강 이름 또는 초성 입력 (예: ㅂㅅㅈㄱ, ㅇㅎ)..."
+        class="w-full px-3.5 py-2.5 rounded-xl bg-navy-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition" />
+
+      <!-- 후보 증강 검색 결과 목록 -->
+      <div id="list-candidate" class="max-h-48 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-1"></div>
+    </section>
+
+    <!-- [구역 3] 추천 결과 출력 영역 -->
+    <section id="result-section" class="bg-gradient-to-b from-slate-900 to-navy-900 border border-indigo-500/30 rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          🏆 증강원 추천 순위
+        </h2>
+        <span class="text-xs text-slate-400">챔피언 궁합 + 보유 시너지 + 기본 티어 합산</span>
+      </div>
+      <div id="result-list" class="space-y-3">
+        <p class="text-sm text-slate-400 text-center py-6">
+          내 챔피언과 후보 증강을 선택하면 실시간으로 추천 순위가 계산됩니다.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // =========================================================================
+    // [구역 4] 내장 데이터 (챔피언 & 아레나 증강)
+    // =========================================================================
+    const CHAMPIONS = [
+      { id: 'yasuo', name: '야스오', role: '전사/암살자', tags: ['치명타', '공속', '근접', '이동', 'AD'] },
+      { id: 'yone', name: '요네', role: '전사/암살자', tags: ['치명타', '공속', '근접', '이동', 'AD'] },
+      { id: 'zed', name: '제드', role: '암살자', tags: ['스킬가속', 'AD', '이동', '폭딜', '근접'] },
+      { id: 'ahri', name: '아리', role: '마법사', tags: ['AP', '스킬가속', '이동', 'CC', '원거리'] },
+      { id: 'lux', name: '럭스', role: '마법사', tags: ['AP', '스킬가속', 'CC', '보호막', '원거리'] },
+      { id: 'ezreal', name: '이즈리얼', role: '원딜', tags: ['스킬가속', 'AD', 'AP', '원거리', '이동', '적중시'] },
+      { id: 'jinx', name: '징크스', role: '원딜', tags: ['치명타', '공속', 'AD', '원거리'] },
+      { id: 'kaisa', name: '카이사', role: '원딜', tags: ['공속', '적중시', 'AP', 'AD', '이동', '원거리'] },
+      { id: 'vayne', name: '베인', role: '원딜', tags: ['공속', '적중시', '이동', '원거리', 'AD'] },
+      { id: 'leesin', name: '리 신', role: '전사', tags: ['AD', '이동', '보호막', '근접', '스킬가속'] },
+      { id: 'darius', name: '다리우스', role: '전사', tags: ['체력', 'AD', '근접', '회복', '지속딜'] },
+      { id: 'garen', name: '가렌', role: '전사', tags: ['체력', '치명타', '근접', '회복', '탱커'] },
+      { id: 'malphite', name: '말파이트', role: '탱커', tags: ['탱커', '체력', 'CC', 'AP', '근접'] },
+      { id: 'ornn', name: '오른', role: '탱커', tags: ['탱커', '체력', 'CC', '근접'] },
+      { id: 'mundo', name: '문도 박사', role: '탱커', tags: ['체력', '회복', '탱커', '근접'] },
+      { id: 'soraka', name: '소라카', role: '서포터', tags: ['회복', '보호막', '스킬가속', 'AP', '원거리'] },
+      { id: 'lulu', name: '룰루', role: '서포터', tags: ['보호막', '스킬가속', 'AP', 'CC', '원거리'] },
+      { id: 'brand', name: '브랜드', role: '마법사', tags: ['AP', '지속딜', '스킬가속', '원거리'] },
+      { id: 'masteryi', name: '마스터 이', role: '전사/암살자', tags: ['공속', '적중시', '근접', 'AD', '이동'] },
+      { id: 'sylas', name: '사일러스', role: '마법사/전사', tags: ['AP', '스킬가속', '회복', '근접', '이동'] },
+      { id: 'jax', name: '잭스', role: '전사', tags: ['공속', '적중시', '스킬가속', '근접', '탱커'] },
+      { id: 'teemo', name: '티모', role: '원딜/마법사', tags: ['AP', '공속', '지속딜', '적중시', '원거리'] },
+      { id: 'jhin', name: '진', role: '원딜', tags: ['치명타', 'AD', '이동', '원거리', '폭딜'] },
+      { id: 'kayn', name: '케인', role: '전사/암살자', tags: ['AD', '스킬가속', '회복', '이동', '근접'] }
+    ];
+
+    const AUGMENTS = [
+      // 프리즘 등급 (기본 점수 높음)
+      { id: 'jeweled', name: '보석 건틀릿', tier: '프리즘', baseScore: 95, tags: ['치명타', 'AP', '폭딜', '스킬가속'], desc: '스킬에 치명타가 적용되며 치명타 확률이 대폭 증가합니다.' },
+      { id: 'mystic_punch', name: '신비한 주먹', tier: '프리즘', baseScore: 94, tags: ['적중시', '공속', '스킬가속', '근접'], desc: '기본 공격 적중 시 모든 스킬의 남은 재사용 대기시간이 감소합니다.' },
+      { id: 'tap_dancer', name: '탭 댄서', tier: '프리즘', baseScore: 92, tags: ['공속', '이동', '원거리', '적중시'], desc: '기본 공격 시 이동 속도가 중첩되며 이속에 비례해 공속이 증가합니다.' },
+      { id: 'goliath', name: '골리앗', tier: '프리즘', baseScore: 91, tags: ['체력', '탱커', '근접', 'AD', 'AP'], desc: '챔피언 크기, 최대 체력, 적응형 능력치가 대폭 상승합니다.' },
+      { id: 'dashing', name: '돌진', tier: '프리즘', baseScore: 90, tags: ['이동', '스킬가속'], desc: '이동 및 돌진 스킬에 막대한 스킬 가속을 얻습니다.' },
+      { id: 'blade_waltz', name: '칼날 왈츠', tier: '프리즘', baseScore: 88, tags: ['AD', '적중시', '폭딜', '근접'], desc: '대상을 지정할 수 없는 상태로 적들을 연속 베어 적중 시 효과를 발동합니다.' },
+      { id: 'infernal_conduit', name: '지옥의 전도체', tier: '프리즘', baseScore: 93, tags: ['AP', '지속딜', '스킬가속'], desc: '스킬 적중 시 중첩되는 화상을 입히고 화상 피해마다 쿨타임이 줄어듭니다.' },
+      { id: 'courage_colossus', name: '거상의 용기', tier: '프리즘', baseScore: 89, tags: ['CC', '보호막', '탱커', '체력'], desc: '적에게 이동 불가 CC를 걸면 대량의 보호막을 얻습니다.' },
+      { id: 'eureka', name: '유레카', tier: '프리즘', baseScore: 92, tags: ['AP', '스킬가속'], desc: '주문력에 비례해 엄청난 수치의 스킬 가속을 획득합니다.' },
+
+      // 골드 등급
+      { id: 'recursion', name: '반복', tier: '골드', baseScore: 84, tags: ['스킬가속', 'AP', 'AD'], desc: '스킬 가속을 대폭(+60) 획득합니다.' },
+      { id: 'twice_thrice', name: '두 번 세 번', tier: '골드', baseScore: 86, tags: ['적중시', '공속'], desc: '3번째 기본 공격마다 적중 시 효과가 한 번 더 발동합니다.' },
+      { id: 'crit_heal', name: '치명적인 치유', tier: '골드', baseScore: 83, tags: ['회복', '보호막', '치명타'], desc: '회복 및 보호막 효과에 치명타가 적용됩니다.' },
+      { id: 'phenomenal_evil', name: '경이로운 악', tier: '골드', baseScore: 85, tags: ['AP', '스킬가속', '지속딜'], desc: '스킬로 적 챔피언에게 피해를 입힐 때마다 영구적으로 주문력을 얻습니다.' },
+      { id: 'perseverance', name: '인내', tier: '골드', baseScore: 82, tags: ['체력', '회복', '탱커'], desc: '기본 체력 재생이 대폭 증가하며 저체력일 때 더욱 강해집니다.' },
+      { id: 'marksmage', name: '명사수 마법사', tier: '골드', baseScore: 85, tags: ['AP', '공속', '원거리'], desc: '기본 공격 시 주문력에 비례한 추가 물리 피해를 입힙니다.' },
+      { id: 'holy_fire', name: '신성한 불꽃', tier: '골드', baseScore: 81, tags: ['회복', '보호막', '지속딜'], desc: '회복 또는 보호막 사용 시 가장 가까운 적에게 화상 피해를 입힙니다.' },
+      { id: 'rabblerousing', name: '선동', tier: '골드', baseScore: 80, tags: ['스킬가속', '회복', '근접'], desc: '스킬을 사용할 때마다 체력을 회복합니다.' },
+      { id: 'vulnerability', name: '취약성', tier: '골드', baseScore: 84, tags: ['치명타', '지속딜', '적중시'], desc: '아이템 효과와 지속 피해에 치명타가 적용됩니다.' },
+
+      // 실버 등급
+      { id: 'deft', name: '능숙함', tier: '실버', baseScore: 76, tags: ['공속', '원거리', '적중시'], desc: '공격 속도가 대폭(+60%) 증가합니다.' },
+      { id: 'mind_to_matter', name: '정신에서 물질로', tier: '실버', baseScore: 74, tags: ['체력', 'AP', '탱커'], desc: '최대 마나의 일정 비율만큼 최대 체력이 증가합니다.' },
+      { id: 'first_aid', name: '구급상자', tier: '실버', baseScore: 75, tags: ['회복', '보호막'], desc: '체력 회복 및 보호막 효과가 25% 증가합니다.' },
+      { id: 'guilty_pleasure', name: '은밀한 쾌락', tier: '실버', baseScore: 75, tags: ['CC', '회복', '탱커'], desc: '적에게 이동 불가 CC를 걸면 체력을 회복합니다.' },
+      { id: 'witchful', name: '마녀의 생각', tier: '실버', baseScore: 76, tags: ['AP', '폭딜'], desc: '주문력을 즉시 대폭(+70) 획득합니다.' },
+      { id: 'blunt_force', name: '둔기', tier: '실버', baseScore: 75, tags: ['AD', '근접', '폭딜'], desc: '공격력이 15% 증가합니다.' },
+      { id: 'sonic_boom', name: '음속 폭음', tier: '실버', baseScore: 74, tags: ['보호막', '회복', 'CC'], desc: '아군을 치유/보호하면 주변 적에게 피해와 둔화를 입힙니다.' },
+      { id: 'tank_it', name: '탱커의 엔진', tier: '실버', baseScore: 77, tags: ['체력', '탱커', '근접'], desc: '처치 관여 시 영구적으로 최대 체력과 크기가 증가합니다.' }
+    ];
+
+    // =========================================================================
+    // [구역 5] 상태 관리
+    // =========================================================================
+    const state = {
+      selectedChamp: null,
+      ownedAugments: [],     // 보유 증강 객체 배열
+      candidateAugments: []  // 후보 증강 객체 배열 (최대 3개)
+    };
+
+    // =========================================================================
+    // [구역 6] 한글 초성 추출 및 검색 유틸리티
+    // =========================================================================
+    const CHOSEONG = [
+      'ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ',
+      'ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'
+    ];
+
+    function getChoseong(str) {
+      let result = '';
+      for (let i = 0; i < str.length; i++) {
+        const code = str.charCodeAt(i) - 44032;
+        if (code >= 0 && code <= 11171) {
+          result += CHOSEONG[Math.floor(code / 588)];
+        } else {
+          result += str[i];
+        }
+      }
+      return result;
+    }
+
+    function matchKorean(target, query) {
+      const q = query.trim().toLowerCase().replace(/\s+/g, '');
+      if (!q) return true;
+      const t = target.toLowerCase().replace(/\s+/g, '');
+      const tCho = getChoseong(t);
+      return t.includes(q) || tCho.includes(q);
+    }
+
+    // 등급별 뱃지 색상 반환
+    function getTierBadge(tier) {
+      if (tier === '프리즘') return 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/40';
+      if (tier === '골드') return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+      return 'bg-slate-500/20 text-slate-300 border-slate-500/40';
+    }
+
+    // =========================================================================
+    // [구역 7] 시너지 추천 점수 계산 엔진
+    // =========================================================================
+    function evaluateCandidates() {
+      if (state.candidateAugments.length === 0) return [];
+
+      const champTags = state.selectedChamp ? state.selectedChamp.tags : [];
+      const ownedTags = state.ownedAugments.flatMap(a => a.tags);
+
+      return state.candidateAugments.map(aug => {
+        let score = aug.baseScore * 0.6; // 기본 티어 가중치
+        const reasons = [];
+
+        // 1) 내 챔피언 태그 매칭
+        const matchedChampTags = aug.tags.filter(tag => champTags.includes(tag));
+        if (matchedChampTags.length > 0) {
+          score += matchedChampTags.length * 14;
+          reasons.push(`${state.selectedChamp.name} 핵심 궁합 (${matchedChampTags.join(', ')})`);
+        }
+
+        // 2) 보유 증강과의 시너지 매칭
+        const matchedOwnedTags = [...new Set(aug.tags.filter(tag => ownedTags.includes(tag)))];
+        if (matchedOwnedTags.length > 0) {
+          score += matchedOwnedTags.length * 10;
+          reasons.push(`보유 증강 시너지 (${matchedOwnedTags.join(', ')})`);
+        }
+
+        // 3) 기본 티어 사유
+        if (reasons.length === 0) {
+          reasons.push(`${aug.tier} 등급 기본 밸류 우수`);
+        }
+
+        return {
+          ...aug,
+          finalScore: Math.round(score),
+          reasons
+        };
+      }).sort((a, b) => b.finalScore - a.finalScore);
+    }
+
+    // =========================================================================
+    // [구역 8] UI 렌더링 함수
+    // =========================================================================
+    const elSearchChamp = document.getElementById('search-champ');
+    const elListChamp = document.getElementById('list-champ');
+    const elSlotChamp = document.getElementById('selected-champ-slot');
+
+    const elSearchOwned = document.getElementById('search-owned');
+    const elListOwned = document.getElementById('list-owned');
+    const elSlotOwned = document.getElementById('selected-owned-slot');
+
+    const elSearchCandidate = document.getElementById('search-candidate');
+    const elListCandidate = document.getElementById('list-candidate');
+    const elSlotCandidates = document.getElementById('selected-candidates-slot');
+    const elCandidateCount = document.getElementById('candidate-count');
+
+    const elResultList = document.getElementById('result-list');
+
+    function renderChampions() {
+      const query = elSearchChamp.value;
+      const filtered = CHAMPIONS.filter(c => matchKorean(c.name, query));
+
+      // 선택 슬롯
+      if (state.selectedChamp) {
+        elSlotChamp.innerHTML = `
+          <button onclick="clearChamp()" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-500/20 border border-indigo-500/50 text-indigo-200 text-xs font-semibold hover:bg-indigo-500/30 transition">
+            <span>${state.selectedChamp.name}</span>
+            <span class="text-[10px] text-indigo-300/80">(${state.selectedChamp.tags.slice(0, 3).join('·')})</span>
+            <span class="text-indigo-400 ml-1">✕</span>
+          </button>
+        `;
+      } else {
+        elSlotChamp.innerHTML = `<span class="text-xs text-slate-500">선택된 챔피언이 없습니다.</span>`;
+      }
+
+      // 목록
+      elListChamp.innerHTML = filtered.map(c => {
+        const isSelected = state.selectedChamp?.id === c.id;
+        return `
+          <button onclick="selectChamp('${c.id}')" class="text-left px-3 py-2 rounded-lg border text-xs transition ${
+            isSelected
+              ? 'bg-indigo-600/30 border-indigo-400 text-white font-bold'
+              : 'bg-navy-950/70 border-slate-800 text-slate-300 hover:border-slate-600 hover:bg-slate-800/70'
+          }">
+            <div class="truncate">${c.name}</div>
+            <div class="text-[10px] text-slate-400 truncate">${c.role}</div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function renderOwned() {
+      const query = elSearchOwned.value;
+      const filtered = AUGMENTS.filter(a => matchKorean(a.name, query));
+
+      // 선택 슬롯
+      if (state.ownedAugments.length > 0) {
+        elSlotOwned.innerHTML = state.ownedAugments.map(a => `
+          <button onclick="toggleOwned('${a.id}')" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs font-medium hover:bg-emerald-500/30 transition">
+            <span>${a.name}</span>
+            <span class="text-emerald-400">✕</span>
+          </button>
+        `).join('');
+      } else {
+        elSlotOwned.innerHTML = `<span class="text-xs text-slate-500">보유한 증강이 없습니다. (선택 사항)</span>`;
+      }
+
+      // 목록
+      elListOwned.innerHTML = filtered.map(a => {
+        const isSelected = state.ownedAugments.some(o => o.id === a.id);
+        return `
+          <button onclick="toggleOwned('${a.id}')" class="w-full flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition ${
+            isSelected
+              ? 'bg-emerald-600/20 border-emerald-500/60 text-white font-semibold'
+              : 'bg-navy-950/70 border-slate-800 text-slate-300 hover:border-slate-600'
+          }">
+            <span class="truncate">${a.name}</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded border ${getTierBadge(a.tier)}">${a.tier}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function renderCandidates() {
+      const query = elSearchCandidate.value;
+      const filtered = AUGMENTS.filter(a => matchKorean(a.name, query));
+
+      elCandidateCount.textContent = `${state.candidateAugments.length} / 3 선택됨`;
+
+      // 후보 3개 슬롯
+      elSlotCandidates.innerHTML = [0, 1, 2].map(idx => {
+        const aug = state.candidateAugments[idx];
+        if (!aug) {
+          return `
+            <div class="h-16 rounded-xl border border-dashed border-slate-700 bg-navy-950/40 flex items-center justify-center text-xs text-slate-500">
+              후보 ${idx + 1} 비어 있음
+            </div>
+          `;
+        }
+        return `
+          <button onclick="toggleCandidate('${aug.id}')" class="h-16 px-3.5 py-2 rounded-xl border border-amber-500/50 bg-amber-500/10 text-left flex flex-col justify-center hover:bg-amber-500/20 transition relative group">
+            <div class="flex items-center justify-between w-full">
+              <span class="text-xs font-bold text-amber-200 truncate">${aug.name}</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded border ${getTierBadge(aug.tier)}">${aug.tier}</span>
+            </div>
+            <span class="text-[10px] text-slate-400 truncate mt-1">${aug.tags.join(' · ')}</span>
+          </button>
+        `;
+      }).join('');
+
+      // 후보 검색 목록
+      elListCandidate.innerHTML = filtered.map(a => {
+        const isSelected = state.candidateAugments.some(c => c.id === a.id);
+        return `
+          <button onclick="toggleCandidate('${a.id}')" class="flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition ${
+            isSelected
+              ? 'bg-amber-500/20 border-amber-400 text-white font-semibold'
+              : 'bg-navy-950/70 border-slate-800 text-slate-300 hover:border-slate-600'
+          }">
+            <div class="truncate pr-2 text-left">
+              <div class="truncate">${a.name}</div>
+              <div class="text-[10px] text-slate-500 truncate">${a.tags.join(', ')}</div>
+            </div>
+            <span class="shrink-0 text-[10px] px-1.5 py-0.5 rounded border ${getTierBadge(a.tier)}">${a.tier}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function renderResults() {
+      const ranked = evaluateCandidates();
+
+      if (ranked.length === 0) {
+        elResultList.innerHTML = `
+          <p class="text-sm text-slate-400 text-center py-6">
+            후보 증강을 1개 이상 선택하면 추천 순위와 이유가 표시됩니다.
+          </p>
+        `;
+        return;
+      }
+
+      const rankStyles = [
+        { badge: 'bg-amber-400 text-navy-950', border: 'border-amber-400/60 bg-amber-500/10', label: '1순위 강력 추천' },
+        { badge: 'bg-slate-300 text-navy-950', border: 'border-slate-600 bg-slate-800/40', label: '2순위 무난함' },
+        { badge: 'bg-orange-400/80 text-navy-950', border: 'border-slate-700 bg-navy-950/60', label: '3순위 비추천' }
+      ];
+
+      elResultList.innerHTML = ranked.map((item, idx) => {
+        const style = rankStyles[idx] || rankStyles[2];
+        return `
+          <div class="p-4 rounded-xl border ${style.border} flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition">
+            <div class="space-y-1.5">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-black px-2 py-0.5 rounded-md ${style.badge}">${idx + 1}위</span>
+                <span class="text-base font-bold text-white">${item.name}</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded border ${getTierBadge(item.tier)}">${item.tier}</span>
+                <span class="text-xs text-slate-400">(${style.label})</span>
+              </div>
+              <p class="text-xs text-slate-300">${item.desc}</p>
+              <div class="flex flex-wrap gap-1.5 pt-0.5">
+                ${item.reasons.map(r => `<span class="text-[11px] px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/20">✓ ${r}</span>`).join('')}
+              </div>
+            </div>
+            <div class="sm:text-right shrink-0">
+              <div class="text-[11px] text-slate-400">추천 점수</div>
+              <div class="text-2xl font-black text-indigo-400">${item.finalScore}<span class="text-xs font-normal text-slate-500">점</span></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderAll() {
+      renderChampions();
+      renderOwned();
+      renderCandidates();
+      renderResults();
+    }
+
+    // =========================================================================
+    // [구역 9] 사용자 액션 핸들러
+    // =========================================================================
+    window.selectChamp = function(id) {
+      state.selectedChamp = CHAMPIONS.find(c => c.id === id) || null;
+      renderAll();
+    };
+
+    window.clearChamp = function() {
+      state.selectedChamp = null;
+      renderAll();
+    };
+
+    window.toggleOwned = function(id) {
+      const exists = state.ownedAugments.some(a => a.id === id);
+      if (exists) {
+        state.ownedAugments = state.ownedAugments.filter(a => a.id !== id);
+      } else {
+        const target = AUGMENTS.find(a => a.id === id);
+        if (target) state.ownedAugments.push(target);
+      }
+      renderAll();
+    };
+
+    window.toggleCandidate = function(id) {
+      const exists = state.candidateAugments.some(a => a.id === id);
+      if (exists) {
+        state.candidateAugments = state.candidateAugments.filter(a => a.id !== id);
+      } else {
+        if (state.candidateAugments.length >= 3) {
+          alert('후보 증강은 최대 3개까지만 선택할 수 있습니다.');
+          return;
+        }
+        const target = AUGMENTS.find(a => a.id === id);
+        if (target) state.candidateAugments.push(target);
+      }
+      renderAll();
+    };
+
+    // 검색창 실시간 이벤트 및 초기화 버튼 연결
+    elSearchChamp.addEventListener('input', renderChampions);
+    elSearchOwned.addEventListener('input', renderOwned);
+    elSearchCandidate.addEventListener('input', renderCandidates);
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      state.selectedChamp = null;
+      state.ownedAugments = [];
+      state.candidateAugments = [];
+      elSearchChamp.value = '';
+      elSearchOwned.value = '';
+      elSearchCandidate.value = '';
+      renderAll();
+    });
+
+    // 초기 화면 렌더링
+    renderAll();
+  </script>
+</body>
+</html>
